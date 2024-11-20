@@ -1,13 +1,13 @@
 ---@class JabModule
----@field jab JabFun
----@field jab_win JabMotionFun
----@field f JabMotionFun
----@field F JabMotionFun
----@field t JabMotionFun
----@field T JabMotionFun
+---@field jab JabFun base function to implement motions
+---@field jab_win JabMotionFun motion with incremental search the window
+---@field f JabMotionFun f-motion
+---@field F JabMotionFun F-motion
+---@field t JabMotionFun t-motion
+---@field T JabMotionFun T-motion
 ---@field namespaces number[] 1 and 2 for labelling, and 3 for backdrop
----@field cache {opts: JabOpts?, namespace: number}
----@field clear fun(buf: number?, namespaces: number[]?): nil
+---@field cache {opts: JabOpts?, namespace: number} internal caches
+---@field clear fun(buf: number?, namespaces: number[]?): nil clears the labelling and backdrop
 local M = {
 	namespaces = {
 		vim.api.nvim_create_namespace("jab-match1"),
