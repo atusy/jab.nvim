@@ -1,4 +1,4 @@
-# jab.nvim
+# 🤜 jab.nvim
 
 Motion plugin with label-hinting supporting Japanese (migemo).
 
