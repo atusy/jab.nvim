@@ -85,6 +85,8 @@ local function generate_finder(char, ignore_case)
 	end
 end
 
+local regex_lastchar = vim.regex([[.$]])
+
 ---@param str string
 ---@param reverse boolean
 ---@param labels string[]
@@ -140,10 +142,18 @@ local function mark_matches(matches)
 		M.cache.namespace = 1
 	end
 	for _, match in ipairs(matches) do
-		vim.api.nvim_buf_set_extmark(0, ns, match.row - 1, match.col_start, {
+		local virt_text = { { match.label, "Error" } }
+		local padding = match.col_label
+			and match.width_label
+			and string.rep(" ", match.width_label - vim.fn.strdisplaywidth(match.label))
+		if padding then
+			table.insert(virt_text, 1, { padding, "Normal" })
+		end
+
+		vim.api.nvim_buf_set_extmark(0, ns, match.row - 1, match.col_label or match.col_start, {
 			end_row = match.row - 1,
 			end_col = match.col_end,
-			virt_text = { { match.label, "Error" } },
+			virt_text = virt_text,
 			virt_text_pos = "overlay",
 			hl_group = "CurSearch",
 		})
@@ -192,23 +202,31 @@ local function find_window(str, top, lines, labels, previous_matches)
 		local pos = 1
 		local n = #line
 		while pos <= n and #matches < #labels do
-			local col = find(line, pos)
-			if col == nil then
+			local found = find(line, pos)
+			if found == nil then
 				break
 			end
-			local label = positioned_labels[row] and positioned_labels[row][col[1]]
+			local label = positioned_labels[row] and positioned_labels[row][found[1]]
 			if not label or generate_finder(str .. label, true)(line, pos) then
 				label = "" -- decide later
 			end
 			available_labels[label] = nil
+
+			local text_left = string.sub(line, 1, found[1])
+			local i1, i2 = regex_lastchar:match_str(text_left)
+			local col_label = i1 or found[1]
+			local width_label = i1 and vim.fn.strdisplaywidth(string.sub(line, i1 + 1, i2))
+
 			local match = {
 				row = row,
-				col_start = col[1],
-				col_end = col[2],
+				col_start = found[1],
+				col_end = found[2],
 				label = label,
+				col_label = col_label,
+				width_label = width_label,
 			} ---@type JabMatch
 			table.insert(matches, match)
-			pos = col[2] + 1
+			pos = found[2] + 1
 		end
 	end
 

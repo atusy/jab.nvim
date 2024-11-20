@@ -9,6 +9,8 @@
 ---@field col_start number
 ---@field col_end number
 ---@field label string
+---@field col_label number?
+---@field width_label number?
 
 ---@alias JabKind "f" | "F" | "t" | "T" | "window"
 ---@alias JabFun fun(kind: JabKind, labels: string[]?, opts: JabOpts?): string?
