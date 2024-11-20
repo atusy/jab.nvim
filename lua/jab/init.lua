@@ -196,7 +196,7 @@ local function find_window(str, top, lines, labels, previous_matches)
 		available_labels[v] = true
 	end
 	local matches = {}
-	local find = generate_finder(str, true)
+	local find = generate_finder(str, str == str:lower())
 	for i, line in ipairs(lines) do
 		local row = top + i
 		local pos = 1
@@ -207,8 +207,13 @@ local function find_window(str, top, lines, labels, previous_matches)
 				break
 			end
 			local label = positioned_labels[row] and positioned_labels[row][found[1]]
-			if not label or generate_finder(str .. label, true)(line, pos) then
-				label = "" -- decide later
+			if not label then
+				label = ""
+			else
+				local str_test = str .. label
+				if generate_finder(str_test, str_test == str_test:lower())(line, pos) then
+					label = "" -- decide later
+				end
 			end
 			available_labels[label] = nil
 
@@ -243,7 +248,9 @@ local function find_window(str, top, lines, labels, previous_matches)
 		if match.label == "" then
 			local candidate = table.remove(remaining_labels, 1)
 			while candidate do
-				if string.upper(candidate) == candidate or not generate_finder(str .. candidate, true)(txt, 1) then
+				local str_test = str .. candidate
+				local ignore_case = str_test == str_test:lower()
+				if not generate_finder(str_test, ignore_case)(txt, 1) then
 					match.label = candidate
 					table.insert(valid_matches, match)
 					break
@@ -373,7 +380,7 @@ local function string2labels(x)
 	end
 	return labels
 end
-local labels_f = string2labels([[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()[]`'=-{}~"+_]])
+local labels_f = string2labels([[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789!@#$%^&*()[]`'=-{}~"+_]])
 local labels_win =
 	string2labels([[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()[]`'=-{}~"+_]])
 
