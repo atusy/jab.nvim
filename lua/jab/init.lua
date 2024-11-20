@@ -30,6 +30,7 @@ local function backdrop(row_start, row_end, col_start, col_end)
 		end_col = col_end,
 		hl_group = "comment",
 	})
+	vim.cmd.redraw()
 end
 
 local function _generate_kensaku_query(pat)
@@ -98,9 +99,6 @@ local function find_inline(str, reverse, labels)
 	local col = cursor[2] + 1
 	local col_start = reverse and 1 or col
 	local col_end = reverse and col or #line
-
-	-- backdrop
-	backdrop(row - 1, row - 1, reverse and 0 or col_start, col_end)
 
 	local matches = {}
 	local find = generate_finder(str, false)
@@ -301,8 +299,8 @@ function M._jab(kind, labels, opts)
 	end
 
 	local match ---@type JabMatch?
-	local str = opts.str or vim.fn.getcharstr()
 	local reverse = kind == "F" or kind == "T"
+	local str = opts.str
 	if kind == "window" then
 		local win = vim.api.nvim_get_current_win()
 		local wininfo = vim.fn.getwininfo(win)
@@ -310,6 +308,7 @@ function M._jab(kind, labels, opts)
 		local lines = vim.api.nvim_buf_get_lines(buf, top, bot, false)
 		local previous_matches = {} ---@type JabMatch[]
 		backdrop(top, bot - 1, 1, #lines[#lines])
+		str = str or vim.fn.getcharstr()
 		while true do
 			local matches = find_window(str, top, lines, labels, previous_matches)
 			local label
@@ -324,6 +323,14 @@ function M._jab(kind, labels, opts)
 			previous_matches = matches
 		end
 	else
+		local cursor = vim.api.nvim_win_get_cursor(0)
+		backdrop(
+			cursor[1] - 1,
+			cursor[1] - (reverse and 1 or 0),
+			reverse and 0 or cursor[2] + 1,
+			reverse and cursor[2] or 0
+		)
+		str = str or vim.fn.getcharstr()
 		local matches = find_inline(str, reverse, labels)
 		if #matches == 1 then
 			match = matches[1]
