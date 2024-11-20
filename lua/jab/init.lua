@@ -1,4 +1,4 @@
----@class M
+---@class JabModule
 ---@field jab JabFun
 ---@field jab_win JabMotionFun
 ---@field f JabMotionFun
