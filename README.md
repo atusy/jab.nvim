@@ -23,23 +23,23 @@ To hit jabs on Japanese characters, you need following plugins.
 -- if vim-kensaku is available, the search is smart-case.
 -- hints appear on the left of the matches if possible.
 vim.keymap.set({ "n", "x", "o" }, ";", function()
-	require("jab").jab_win()
+	return require("jab").jab_win()
 end, { expr = true })
 
 -- f-motions
 -- search is always case-sensitive
 -- hints appear exactly on the matches.
 vim.keymap.set({ "n", "x", "o" }, "f", function()
-	require("jab").f()
+	return require("jab").f()
 end, { expr = true })
 vim.keymap.set({ "n", "x", "o" }, "F", function()
-	require("jab").F()
+	return require("jab").F()
 end, { expr = true })
 vim.keymap.set({ "n", "x", "o" }, "t", function()
-	require("jab").t()
+	return require("jab").t()
 end, { expr = true })
 vim.keymap.set({ "n", "x", "o" }, "T", function()
-	require("jab").T()
+	return require("jab").T()
 end, { expr = true })
 ```
 
@@ -49,7 +49,7 @@ Exceptionally, you can provide custome-labels like below.
 
 ```lua
 vim.keymap.set({ "n", "x", "o" }, "f", function()
-	require("jab").f({ "a", "b", "c" })
+	return require("jab").f({ "a", "b", "c" })
 end, { expr = true })
 ```
 
