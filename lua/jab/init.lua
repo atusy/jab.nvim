@@ -109,7 +109,12 @@ local function find_inline(str, reverse, labels)
 			break
 		end
 		pos = found[2] + 1
-		local match = { row, found[1], found[2], labels[#matches + 1] } ---@type JabMatch
+		local match = {
+			row = row,
+			col_start = found[1],
+			col_end = found[2],
+			label = labels[#matches + 1],
+		} ---@type JabMatch
 		if reverse then
 			if pos < col_end then
 				table.insert(matches, 1, match)
@@ -121,8 +126,8 @@ local function find_inline(str, reverse, labels)
 	return matches
 end
 
----@param locs JabMatch[]
-local function mark_labels(locs)
+---@param matches JabMatch[]
+local function mark_matches(matches)
 	-- suppress flickers by switching namespaces
 	local ns1, ns2 = M.namespaces[1], M.namespaces[2]
 	local ns = ns1
@@ -134,11 +139,11 @@ local function mark_labels(locs)
 	else
 		M.cache.namespace = 1
 	end
-	for _, loc in ipairs(locs) do
-		vim.api.nvim_buf_set_extmark(0, ns, loc[1] - 1, loc[2], {
-			end_row = loc[1] - 1,
-			end_col = loc[3],
-			virt_text = { { loc[4], "Error" } },
+	for _, match in ipairs(matches) do
+		vim.api.nvim_buf_set_extmark(0, ns, match.row - 1, match.col_start, {
+			end_row = match.row - 1,
+			end_col = match.col_end,
+			virt_text = { { match.label, "Error" } },
 			virt_text_pos = "overlay",
 			hl_group = "CurSearch",
 		})
@@ -149,7 +154,7 @@ end
 
 ---@param locs JabMatch[]
 local function _select_label(locs)
-	mark_labels(locs)
+	mark_matches(locs)
 	return vim.fn.getcharstr()
 end
 
@@ -171,10 +176,10 @@ end
 local function find_window(str, top, lines, labels, previous_matches)
 	local positioned_labels = {} ---@type table<number, table<number, string>>
 	for _, match in ipairs(previous_matches) do
-		if not positioned_labels[match[1]] then
-			positioned_labels[match[1]] = {}
+		if not positioned_labels[match.row] then
+			positioned_labels[match.row] = {}
 		end
-		positioned_labels[match[1]][match[2]] = match[4]
+		positioned_labels[match.row][match.col_start] = match.label
 	end
 	local available_labels = {}
 	for _, v in ipairs(labels) do
@@ -196,7 +201,12 @@ local function find_window(str, top, lines, labels, previous_matches)
 				label = "" -- decide later
 			end
 			available_labels[label] = nil
-			local match = { row, col[1], col[2], label } ---@type JabMatch
+			local match = {
+				row = row,
+				col_start = col[1],
+				col_end = col[2],
+				label = label,
+			} ---@type JabMatch
 			table.insert(matches, match)
 			pos = col[2] + 1
 		end
@@ -212,11 +222,11 @@ local function find_window(str, top, lines, labels, previous_matches)
 	local valid_matches = {}
 	local txt = table.concat(lines, "\n")
 	for _, match in ipairs(matches) do
-		if match[4] == "" then
+		if match.label == "" then
 			local candidate = table.remove(remaining_labels, 1)
 			while candidate do
 				if string.upper(candidate) == candidate or not generate_finder(str .. candidate, true)(txt, 1) then
-					match[4] = candidate
+					match.label = candidate
 					table.insert(valid_matches, match)
 					break
 				end
@@ -243,7 +253,7 @@ local function select_match(matches, label)
 	end
 
 	for _, match in pairs(matches) do
-		if match[4] == label then
+		if match.label == label then
 			return match, label
 		end
 	end
@@ -308,17 +318,17 @@ function M._jab(kind, labels, opts)
 		return ""
 	end
 	local offsets = { f = 0, F = 0, t = -1, T = 1, window = 0 }
-	local jump_col = (kind == "f" or kind == "T") and match[3] - 1 or match[2]
+	local jump_col = (kind == "f" or kind == "T") and match.col_end - 1 or match.col_start
 	jump_col = jump_col + offsets[kind] + (not reverse and operator_pending and 1 or 0)
 
 	if opts.instant then
-		vim.api.nvim_win_set_cursor(0, { match[1], jump_col })
+		vim.api.nvim_win_set_cursor(0, { match.row, jump_col })
 		return
 	end
 
-	jumpto = { match[1], jump_col }
+	jumpto = { match.row, jump_col }
 	if operator_pending then
-		M.cache.opts = { str = str, label = match[4], instant = true, labels = labels } ---@type JabOpts
+		M.cache.opts = { str = str, label = match.label, instant = true, labels = labels } ---@type JabOpts
 	end
 	return string.format("<cmd>lua require('jab').jab([==[%s]==], nil, require('jab').cache.opts)<cr>", kind)
 end
