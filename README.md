@@ -20,7 +20,9 @@ To hit jabs on Japanese characters, you need following plugins.
 
 ```lua
 -- incremental search
--- if vim-kensaku is available, the search is smart-case.
+-- if vim-kensaku is available and initial query is uppercase,
+-- then the search is case-sensitive.
+-- Otherwise, the search is case-insensitive.
 -- hints appear on the left of the matches if possible.
 vim.keymap.set({ "n", "x", "o" }, ";", function()
 	return require("jab").jab_win()

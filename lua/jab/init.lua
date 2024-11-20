@@ -196,7 +196,9 @@ local function find_window(str, top, lines, labels, previous_matches)
 		available_labels[v] = true
 	end
 	local matches = {}
-	local find = generate_finder(str, str == str:lower())
+	local initial = str:sub(1, 1)
+	local ignore_case = initial == initial:lower()
+	local find = generate_finder(str, ignore_case)
 	for i, line in ipairs(lines) do
 		local row = top + i
 		local pos = 1
@@ -211,7 +213,7 @@ local function find_window(str, top, lines, labels, previous_matches)
 				label = ""
 			else
 				local str_test = str .. label
-				if generate_finder(str_test, str_test == str_test:lower())(line, pos) then
+				if generate_finder(str_test, ignore_case)(line, pos) then
 					label = "" -- decide later
 				end
 			end
@@ -249,7 +251,6 @@ local function find_window(str, top, lines, labels, previous_matches)
 			local candidate = table.remove(remaining_labels, 1)
 			while candidate do
 				local str_test = str .. candidate
-				local ignore_case = str_test == str_test:lower()
 				if not generate_finder(str_test, ignore_case)(txt, 1) then
 					match.label = candidate
 					table.insert(valid_matches, match)
