@@ -34,9 +34,6 @@ local function backdrop(row_start, row_end, col_start, col_end)
 end
 
 local function _generate_kensaku_query(pat)
-	if pat:match("[0-9A-Z]") then
-		return pat, true
-	end
 	local str = pat
 	local query = ""
 	for _ = 1, #str do
