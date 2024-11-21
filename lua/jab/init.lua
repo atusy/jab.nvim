@@ -62,24 +62,34 @@ end
 ---@param ignore_case boolean
 ---@return fun(line: string, init: number): {[1]: number, [2]: number} | nil
 local function generate_finder(char, ignore_case)
+	-- try vim-kensaku
 	local ok, query = pcall(generate_kensaku_query, char, ignore_case)
-	if not ok then
-		return function(line, init)
-			local idx = line:find(char, init, true)
-			if idx == nil then
-				return nil
+	if ok then
+		local ok_regex, regex = pcall(vim.regex, query)
+		if ok_regex then
+			return function(line, init)
+				local i, j = regex:match_str(string.sub(line, init))
+				if i == nil then
+					return nil
+				end
+				return { i + init - 1, j + init - 1 }
 			end
-			-- 0-based
-			return { idx - 1, idx + string.len(char) - 2 }
+		end
+
+		-- notify error
+		if regex then
+			vim.notify(vim.inspect({ error = regex, regex = query, input = char }), vim.log.levels.ERROR)
 		end
 	end
-	local regex = vim.regex(query)
+
+	-- fallback to simple string.find
 	return function(line, init)
-		local i, j = regex:match_str(string.sub(line, init))
-		if i == nil then
+		local idx = line:find(char, init, true)
+		if idx == nil then
 			return nil
 		end
-		return { i + init - 1, j + init - 1 }
+		-- 0-based
+		return { idx - 1, idx + string.len(char) - 2 }
 	end
 end
 
