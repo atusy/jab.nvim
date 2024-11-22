@@ -219,19 +219,14 @@ local function find_window(str, top, lines, labels, previous_matches)
 	local initial = str:sub(1, 1)
 	local ignore_case = initial == initial:lower()
 	local find = generate_finder(str, ignore_case)
-	local skip = {}
-	for i, _ in ipairs(lines) do
-		skip[i] = false
-	end
 	for i, line in ipairs(lines) do
-		if not skip[i] or available_labels_count > #matches then
+		if available_labels_count > #matches then
 			local row = top + i
 			local pos = 1
 			local n = #line
 			while pos <= n and #matches < #labels do
 				local found = find(line, pos)
 				if found == nil then
-					skip[i] = true
 					break
 				end
 
