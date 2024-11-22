@@ -62,28 +62,12 @@ end
 ---@param ignore_case boolean
 ---@return fun(line: string, init: number): {[1]: number, [2]: number} | nil
 local function generate_finder(char, ignore_case)
-	-- try vim-kensaku
-	local ok, query = pcall(generate_kensaku_query, char, ignore_case)
-	if ok then
-		local ok_regex, regex = pcall(vim.regex, query)
-		if ok_regex then
-			return function(line, init)
-				local i, j = regex:match_str(string.sub(line, init))
-				if i == nil then
-					return nil
-				end
-				return { i + init - 1, j + init - 1 }
-			end
-		end
-
-		-- notify error
-		if regex then
-			vim.notify(vim.inspect({ error = regex, regex = query, input = char }), vim.log.levels.ERROR)
-		end
+	if ignore_case then
+		char = string.lower(char)
 	end
 
-	-- fallback to simple string.find
-	return function(line, init)
+	-- default finder
+	local function string_find(line, init)
 		if ignore_case then
 			line = string.lower(line)
 		end
@@ -93,6 +77,31 @@ local function generate_finder(char, ignore_case)
 		end
 		-- 0-based
 		return { idx_start - 1, idx_end }
+	end
+
+	-- try vim-kensaku or use default
+	local ok_kensaku, query = pcall(generate_kensaku_query, char, ignore_case)
+	if not ok_kensaku then
+		return string_find
+	end
+
+	local ok_regex, regex = pcall(vim.regex, query)
+	if not ok_regex then
+		if regex then
+			vim.notify(vim.inspect({ error = regex, regex = query, input = char }), vim.log.levels.ERROR)
+		end
+		return string_find
+	end
+
+	return function(line, init)
+		if line:match("[^%w%p%s]") then
+			local i, j = regex:match_str(string.sub(line, init))
+			if i == nil then
+				return nil
+			end
+			return { i + init - 1, j + init - 1 }
+		end
+		return string_find(line, init)
 	end
 end
 
