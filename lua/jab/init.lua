@@ -273,7 +273,9 @@ local function find_window(str, top, lines, labels, previous_matches)
 	local valid_matches = {}
 	local txt = table.concat(lines, "\n")
 	for _, match in ipairs(matches) do
-		if match.label ~= "" then
+		-- lower case labels: always
+		-- upper case labels: only if not ignore_case
+		if match.label ~= "" and (not ignore_case or match.label == match.label:lower()) then
 			local str_test = str .. match.label
 			if generate_finder(str_test, ignore_case)(txt, 1) then
 				match.label = ""
