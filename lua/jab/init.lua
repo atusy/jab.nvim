@@ -202,10 +202,9 @@ end
 ---@return JabMatch[]
 local function find_window(str, top, lines, labels, previous_matches)
 	local available_labels = {} --- @type table<string, true>
-	local available_labels_count = 0
+	local available_labels_count = #labels
 	for _, v in ipairs(labels) do
 		available_labels[v] = true
-		available_labels_count = available_labels_count + 1
 	end
 
 	local positioned_labels = {} ---@type table<number, table<number, string>>
@@ -214,8 +213,6 @@ local function find_window(str, top, lines, labels, previous_matches)
 			positioned_labels[match.row] = {}
 		end
 		positioned_labels[match.row][match.col_start] = match.label
-		available_labels[match.label] = nil
-		available_labels_count = available_labels_count - 1
 	end
 
 	local matches = {}
