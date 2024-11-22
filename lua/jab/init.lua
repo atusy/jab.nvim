@@ -196,10 +196,6 @@ local function find_window(str, top, lines, labels, previous_matches)
 		end
 		positioned_labels[match.row][match.col_start] = match.label
 	end
-	local available_labels = {}
-	for _, v in ipairs(labels) do
-		available_labels[v] = true
-	end
 	local matches = {}
 	local initial = str:sub(1, 1)
 	local ignore_case = initial == initial:lower()
@@ -214,16 +210,6 @@ local function find_window(str, top, lines, labels, previous_matches)
 				break
 			end
 			local label = positioned_labels[row] and positioned_labels[row][found[1]]
-			if not label then
-				label = ""
-			else
-				local str_test = str .. label
-				if generate_finder(str_test, ignore_case)(line, pos) then
-					label = "" -- decide later
-				end
-			end
-			available_labels[label] = nil
-
 			local text_left = string.sub(line, 1, found[1])
 			local i1, i2 = regex_lastchar:match_str(text_left)
 			local col_label = i1 or found[1]
@@ -233,7 +219,7 @@ local function find_window(str, top, lines, labels, previous_matches)
 				row = row,
 				col_start = found[1],
 				col_end = found[2],
-				label = label,
+				label = label or "",
 				col_label = col_label,
 				width_label = width_label,
 			} ---@type JabMatch
@@ -242,26 +228,36 @@ local function find_window(str, top, lines, labels, previous_matches)
 		end
 	end
 
-	local remaining_labels = {}
-	for _, v in pairs(labels) do
-		if available_labels[v] then
-			table.insert(remaining_labels, v)
-		end
+	local available_labels = {}
+	for _, v in ipairs(labels) do
+		available_labels[v] = true
 	end
+	local remaining_labels = { unpack(labels) }
 
 	local valid_matches = {}
 	local txt = table.concat(lines, "\n")
 	for _, match in ipairs(matches) do
+		if match.label ~= "" then
+			local str_test = str .. match.label
+			if generate_finder(str_test, ignore_case)(txt, 1) then
+				match.label = ""
+			else
+				available_labels[match.label] = nil
+			end
+		end
 		if match.label == "" then
 			local candidate = table.remove(remaining_labels, 1)
 			while candidate do
-				local str_test = str .. candidate
-				if not generate_finder(str_test, ignore_case)(txt, 1) then
-					match.label = candidate
-					table.insert(valid_matches, match)
-					break
+				if available_labels[candidate] then
+					available_labels[candidate] = nil
+					local str_test = str .. candidate
+					if not generate_finder(str_test, ignore_case)(txt, 1) then
+						match.label = candidate
+						table.insert(valid_matches, match)
+						break
+					end
+					candidate = table.remove(remaining_labels, 1)
 				end
-				candidate = table.remove(remaining_labels, 1)
 			end
 		else
 			table.insert(valid_matches, match)
