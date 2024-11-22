@@ -207,12 +207,16 @@ local function find_window(str, top, lines, labels, previous_matches)
 		available_labels[v] = true
 	end
 
+	local row_previous_last_match = top
 	local positioned_labels = {} ---@type table<number, table<number, string>>
 	for _, match in ipairs(previous_matches) do
 		if not positioned_labels[match.row] then
 			positioned_labels[match.row] = {}
 		end
 		positioned_labels[match.row][match.col_start] = match.label
+		if match.row > row_previous_last_match then
+			row_previous_last_match = match.row
+		end
 	end
 
 	local matches = {}
@@ -225,37 +229,39 @@ local function find_window(str, top, lines, labels, previous_matches)
 		end
 
 		local row = top + i
-		local pos = 1
-		local n = #line
-		while pos <= n and #matches < #labels do
-			local found = find(line, pos)
-			if found == nil then
-				break
+		if row > row_previous_last_match or positioned_labels[row] then
+			local pos = 1
+			local n = #line
+			while pos <= n and #matches < #labels do
+				local found = find(line, pos)
+				if found == nil then
+					break
+				end
+
+				local label = positioned_labels[row] and positioned_labels[row][found[1]] or ""
+				local char_right = string.sub(line, found[2] + 1, found[2] + 1)
+				available_labels[label] = nil
+				available_labels_count = available_labels_count - 1
+				if label == char_right then
+					label = ""
+				end
+
+				local text_left = string.sub(line, 1, found[1])
+				local i1, i2 = regex_lastchar:match_str(text_left)
+				local col_label = i1 or found[1]
+				local width_label = i1 and vim.fn.strdisplaywidth(string.sub(line, i1 + 1, i2))
+
+				local match = {
+					row = row,
+					col_start = found[1],
+					col_end = found[2],
+					label = label,
+					col_label = col_label,
+					width_label = width_label,
+				} ---@type JabMatch
+				table.insert(matches, match)
+				pos = found[2] + 1
 			end
-
-			local label = positioned_labels[row] and positioned_labels[row][found[1]] or ""
-			local char_right = string.sub(line, found[2] + 1, found[2] + 1)
-			available_labels[label] = nil
-			available_labels_count = available_labels_count - 1
-			if label == char_right then
-				label = ""
-			end
-
-			local text_left = string.sub(line, 1, found[1])
-			local i1, i2 = regex_lastchar:match_str(text_left)
-			local col_label = i1 or found[1]
-			local width_label = i1 and vim.fn.strdisplaywidth(string.sub(line, i1 + 1, i2))
-
-			local match = {
-				row = row,
-				col_start = found[1],
-				col_end = found[2],
-				label = label,
-				col_label = col_label,
-				width_label = width_label,
-			} ---@type JabMatch
-			table.insert(matches, match)
-			pos = found[2] + 1
 		end
 	end
 
