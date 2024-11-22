@@ -263,8 +263,10 @@ local function find_window(str, top, lines, labels, previous_matches)
 	end
 
 	local remaining_labels = {}
-	for k, _ in pairs(available_labels) do
-		table.insert(remaining_labels, k)
+	for _, v in pairs(labels) do
+		if available_labels[v] then
+			table.insert(remaining_labels, v)
+		end
 	end
 
 	local valid_matches = {}
