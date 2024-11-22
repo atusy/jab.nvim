@@ -323,6 +323,29 @@ end
 
 local jumpto = nil
 
+---Search a character on the current line for f-motion
+---@param str string? a character
+---@param reverse boolean
+---@param labels string[]
+---@param label string?
+---@return JabMatch?, string
+local function search_inline(str, reverse, labels, label)
+	local cursor = vim.api.nvim_win_get_cursor(0)
+	backdrop(
+		cursor[1] - 1,
+		cursor[1] - (reverse and 1 or 0),
+		reverse and 0 or cursor[2] + 1,
+		reverse and cursor[2] or 0
+	)
+	str = str or vim.fn.getcharstr()
+	local matches = find_inline(str, reverse, labels)
+	if #matches == 1 then
+		return matches[1], str
+	end
+	local match, _ = select_match(matches, label)
+	return match, str
+end
+
 ---@type JabFun
 function M._jab(kind, labels, opts)
 	kind = kind or "f"
@@ -337,7 +360,9 @@ function M._jab(kind, labels, opts)
 	local match ---@type JabMatch?
 	local reverse = kind == "F" or kind == "T"
 	local str = opts.str
-	if kind == "window" then
+	if kind ~= "window" then
+		match, str = search_inline(str, reverse, labels, opts.label)
+	else
 		local win = vim.api.nvim_get_current_win()
 		local wininfo = vim.fn.getwininfo(win)
 		local buf, top, bot = wininfo[1].bufnr, wininfo[1].topline - 1, wininfo[1].botline
@@ -357,21 +382,6 @@ function M._jab(kind, labels, opts)
 			end
 			str = str .. label -- if no match, assume label as part of the search string
 			previous_matches = matches
-		end
-	else
-		local cursor = vim.api.nvim_win_get_cursor(0)
-		backdrop(
-			cursor[1] - 1,
-			cursor[1] - (reverse and 1 or 0),
-			reverse and 0 or cursor[2] + 1,
-			reverse and cursor[2] or 0
-		)
-		str = str or vim.fn.getcharstr()
-		local matches = find_inline(str, reverse, labels)
-		if #matches == 1 then
-			match = matches[1]
-		else
-			match, _ = select_match(matches, opts.label)
 		end
 	end
 	if not match then
