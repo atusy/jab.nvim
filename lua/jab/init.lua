@@ -220,40 +220,42 @@ local function find_window(str, top, lines, labels, previous_matches)
 	local ignore_case = initial == initial:lower()
 	local find = generate_finder(str, ignore_case)
 	for i, line in ipairs(lines) do
-		if available_labels_count > #matches then
-			local row = top + i
-			local pos = 1
-			local n = #line
-			while pos <= n and #matches < #labels do
-				local found = find(line, pos)
-				if found == nil then
-					break
-				end
+		if available_labels_count <= #matches then
+			break
+		end
 
-				local label = positioned_labels[row] and positioned_labels[row][found[1]] or ""
-				local char_right = string.sub(line, found[2] + 1, found[2] + 1)
-				available_labels[label] = nil
-				available_labels_count = available_labels_count - 1
-				if label == char_right then
-					label = ""
-				end
-
-				local text_left = string.sub(line, 1, found[1])
-				local i1, i2 = regex_lastchar:match_str(text_left)
-				local col_label = i1 or found[1]
-				local width_label = i1 and vim.fn.strdisplaywidth(string.sub(line, i1 + 1, i2))
-
-				local match = {
-					row = row,
-					col_start = found[1],
-					col_end = found[2],
-					label = label,
-					col_label = col_label,
-					width_label = width_label,
-				} ---@type JabMatch
-				table.insert(matches, match)
-				pos = found[2] + 1
+		local row = top + i
+		local pos = 1
+		local n = #line
+		while pos <= n and #matches < #labels do
+			local found = find(line, pos)
+			if found == nil then
+				break
 			end
+
+			local label = positioned_labels[row] and positioned_labels[row][found[1]] or ""
+			local char_right = string.sub(line, found[2] + 1, found[2] + 1)
+			available_labels[label] = nil
+			available_labels_count = available_labels_count - 1
+			if label == char_right then
+				label = ""
+			end
+
+			local text_left = string.sub(line, 1, found[1])
+			local i1, i2 = regex_lastchar:match_str(text_left)
+			local col_label = i1 or found[1]
+			local width_label = i1 and vim.fn.strdisplaywidth(string.sub(line, i1 + 1, i2))
+
+			local match = {
+				row = row,
+				col_start = found[1],
+				col_end = found[2],
+				label = label,
+				col_label = col_label,
+				width_label = width_label,
+			} ---@type JabMatch
+			table.insert(matches, match)
+			pos = found[2] + 1
 		end
 	end
 
