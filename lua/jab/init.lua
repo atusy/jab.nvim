@@ -223,7 +223,7 @@ end
 ---@param labels string[]
 ---@param previous_matches JabMatch[]
 ---@return JabMatch[]
-local function find_window(str, top, lines, labels, previous_matches)
+local function find_inwindow(str, top, lines, labels, previous_matches)
 	local available_labels = {} --- @type table<string, true>
 	local available_labels_count = #labels
 	for _, v in ipairs(labels) do
@@ -401,7 +401,7 @@ end
 local function search_lines(str, lines, top, labels, selected_label)
 	local previous_matches = {} ---@type JabMatch[]
 	while true do
-		local matches = find_window(str, top, lines, labels, previous_matches)
+		local matches = find_inwindow(str, top, lines, labels, previous_matches)
 		local match, label = select_match(matches, selected_label)
 		if not label then
 			return nil, str
@@ -418,7 +418,7 @@ end
 ---@param str string?
 ---@param labels string[]
 ---@param selected_label string?
-local function search_window(str, labels, selected_label)
+local function search_inwindow(str, labels, selected_label)
 	local wininfo = vim.fn.getwininfo(vim.api.nvim_get_current_win())
 	local buf, top, bot = wininfo[1].bufnr, wininfo[1].topline - 1, wininfo[1].botline
 	local lines = vim.api.nvim_buf_get_lines(buf, top, bot, false)
@@ -449,7 +449,7 @@ function M._jab(kind, labels, opts)
 	if kind ~= "window" then
 		match, str = search_inline(str, reverse, labels, opts.label)
 	else
-		match, str = search_window(str, labels, opts.label)
+		match, str = search_inwindow(str, labels, opts.label)
 	end
 
 	-- test if match is available
