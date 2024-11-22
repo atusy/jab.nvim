@@ -176,7 +176,6 @@ local function mark_matches(matches)
 		})
 	end
 	M.clear(0, { used_ns })
-	vim.cmd.redraw()
 end
 
 ---@param locs JabMatch[]
