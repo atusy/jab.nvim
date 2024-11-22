@@ -314,7 +314,7 @@ function M._jab(kind, labels, opts)
 		local buf, top, bot = wininfo[1].bufnr, wininfo[1].topline - 1, wininfo[1].botline
 		local lines = vim.api.nvim_buf_get_lines(buf, top, bot, false)
 		local previous_matches = {} ---@type JabMatch[]
-		backdrop(top, bot - 1, 1, #lines[#lines])
+		backdrop(top, bot - 1, 0, #lines[#lines])
 		str = str or vim.fn.getcharstr()
 		while true do
 			local matches = find_window(str, top, lines, labels, previous_matches)
