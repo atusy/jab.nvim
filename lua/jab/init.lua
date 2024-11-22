@@ -33,6 +33,13 @@ local function backdrop(row_start, row_end, col_start, col_end)
 	vim.cmd.redraw()
 end
 
+--- Generate migemo-based regular expression with vim-kensaku
+---
+--- Instead of simply using `kensaku#query`, split the input pattern by spaces,
+--- and concatenate regular expressions from each portions.
+---
+--- @param pat string
+--- @return string
 local function _generate_kensaku_query(pat)
 	local str = pat
 	local query = ""
@@ -50,6 +57,9 @@ local function _generate_kensaku_query(pat)
 	return query
 end
 
+--- Generate migemo-based regular expression with vim-kensaku
+---
+--- with addition of ignore case option.
 local function generate_kensaku_query(pat, ignore_case)
 	local query = _generate_kensaku_query(pat)
 	if ignore_case then
@@ -58,12 +68,18 @@ local function generate_kensaku_query(pat, ignore_case)
 	return query
 end
 
----@param char string
+--- Generate a finder function for a character
+---
+--- If vim-kensaku is available, use it to generate a regular expression finder.
+--- Otherwise, use `string.find` as a fallback.
+--- For the performance reason, the fallback is also used when search target
+--- only contains ASCII characters.
+---@param pat string
 ---@param ignore_case boolean
 ---@return fun(line: string, init: number): {[1]: number, [2]: number} | nil
-local function generate_finder(char, ignore_case)
+local function generate_finder(pat, ignore_case)
 	if ignore_case then
-		char = string.lower(char)
+		pat = string.lower(pat)
 	end
 
 	-- default finder
@@ -71,7 +87,7 @@ local function generate_finder(char, ignore_case)
 		if ignore_case then
 			line = string.lower(line)
 		end
-		local idx_start, idx_end = line:find(char, init, true)
+		local idx_start, idx_end = line:find(pat, init, true)
 		if idx_start == nil then
 			return nil
 		end
@@ -79,8 +95,8 @@ local function generate_finder(char, ignore_case)
 		return { idx_start - 1, idx_end }
 	end
 
-	-- try vim-kensaku or use default
-	local ok_kensaku, query = pcall(generate_kensaku_query, char, ignore_case)
+	-- test if vim-kensaku is usable and fallback to string_find
+	local ok_kensaku, query = pcall(generate_kensaku_query, pat, ignore_case)
 	if not ok_kensaku then
 		return string_find
 	end
@@ -88,11 +104,12 @@ local function generate_finder(char, ignore_case)
 	local ok_regex, regex = pcall(vim.regex, query)
 	if not ok_regex then
 		if regex then
-			vim.notify(vim.inspect({ error = regex, regex = query, input = char }), vim.log.levels.ERROR)
+			vim.notify(vim.inspect({ error = regex, regex = query, input = pat }), vim.log.levels.ERROR)
 		end
 		return string_find
 	end
 
+	-- use vim-kensaku combined with string_find
 	return function(line, init)
 		if line:match("[^%w%p%s]") then
 			local i, j = regex:match_str(string.sub(line, init))
@@ -158,8 +175,17 @@ local function mark_matches(matches)
 	else
 		M.cache.namespace = 1
 	end
+
+	--
 	for _, match in ipairs(matches) do
+		-- label
 		local virt_text = { { match.label, "Error" } }
+
+		-- add padding to the label for window-search.
+		-- when input is `i`, then it matches `い`,
+		-- and label should appear on the very left`of `い` like below.
+		-- あいう
+		--  a^^
 		local padding = match.col_label
 			and match.width_label
 			and string.rep(" ", match.width_label - vim.fn.strdisplaywidth(match.label))
@@ -167,6 +193,7 @@ local function mark_matches(matches)
 			table.insert(virt_text, 1, { padding, "Normal" })
 		end
 
+		-- show label and highlight match
 		vim.api.nvim_buf_set_extmark(0, ns, match.row - 1, match.col_label or match.col_start, {
 			end_row = match.row - 1,
 			end_col = match.col_end,
@@ -175,9 +202,13 @@ local function mark_matches(matches)
 			hl_group = "CurSearch",
 		})
 	end
+
+	-- clean up unused namespace and redraw
 	M.clear(0, { used_ns })
 end
 
+---Select a label from the user input
+---@return string | nil
 local function select_label()
 	local ok, label = pcall(vim.fn.getcharstr)
 	if not ok then
@@ -298,6 +329,7 @@ local function find_window(str, top, lines, labels, previous_matches)
 	return valid_matches
 end
 
+---Select a match by comaparing the label with the user input
 ---@param matches JabMatch[]
 ---@param label string?
 ---@return JabMatch | nil, string | nil
@@ -387,6 +419,9 @@ function M._jab(kind, labels, opts)
 	kind = kind or "f"
 	labels = labels or (opts and opts.labels)
 	opts = opts or {}
+
+	-- When recursed from the expr-mapping, jump to the position
+	-- detrmined by the last call.
 	if jumpto ~= nil then
 		vim.api.nvim_win_set_cursor(0, jumpto)
 		jumpto = nil
@@ -403,6 +438,7 @@ function M._jab(kind, labels, opts)
 		match, str = search_window(str, labels, opts.label)
 	end
 
+	-- test if match is available
 	local mode = vim.api.nvim_get_mode().mode
 	local operator_pending = mode == "no"
 	if not match then
@@ -411,19 +447,25 @@ function M._jab(kind, labels, opts)
 		end
 		return ""
 	end
+
+	-- Find jump position
 	local offsets = { f = 0, F = 0, t = -1, T = 1, window = 0 }
 	local jump_col = (kind == "f" or kind == "T") and match.col_end - 1 or match.col_start
 	jump_col = jump_col + offsets[kind] + (not reverse and operator_pending and 1 or 0)
 
+	-- Instant jump without recursing via the expr-mapping
 	if opts.instant then
 		vim.api.nvim_win_set_cursor(0, { match.row, jump_col })
 		return
 	end
 
+	-- Cache the current state
 	jumpto = { match.row, jump_col }
 	if operator_pending then
 		M.cache.opts = { str = str, label = match.label, instant = true, labels = labels } ---@type JabOpts
 	end
+
+	-- Recurse via the expr-mapping
 	return string.format("<cmd>lua require('jab').jab([==[%s]==], nil, require('jab').cache.opts)<cr>", kind)
 end
 
