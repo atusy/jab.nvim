@@ -47,7 +47,7 @@ local function _generate_kensaku_query(pat)
 		query = query .. string.rep([[\(\s\|　\)]], right - left + 1)
 		str = string.sub(str, right + 1)
 	end
-	return query, false
+	return query
 end
 
 local function generate_kensaku_query(pat, ignore_case)
