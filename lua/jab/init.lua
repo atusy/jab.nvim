@@ -84,12 +84,15 @@ local function generate_finder(char, ignore_case)
 
 	-- fallback to simple string.find
 	return function(line, init)
-		local idx = line:find(char, init, true)
-		if idx == nil then
+		if ignore_case then
+			line = string.lower(line)
+		end
+		local idx_start, idx_end = line:find(char, init, true)
+		if idx_start == nil then
 			return nil
 		end
 		-- 0-based
-		return { idx - 1, idx + string.len(char) - 2 }
+		return { idx_start - 1, idx_end }
 	end
 end
 
