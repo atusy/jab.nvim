@@ -178,15 +178,8 @@ local function mark_matches(matches)
 	M.clear(0, { used_ns })
 end
 
----@param locs JabMatch[]
-local function _select_label(locs)
-	mark_matches(locs)
-	return vim.fn.getcharstr()
-end
-
----@param locs JabMatch[]
-local function select_label(locs)
-	local ok, label = pcall(_select_label, locs)
+local function select_label()
+	local ok, label = pcall(vim.fn.getcharstr)
 	if not ok then
 		vim.notify(label)
 	end
@@ -312,8 +305,9 @@ local function select_match(matches, label)
 	if not matches or #matches == 0 then
 		return nil, nil
 	end
-	label = label or select_label(matches)
+	mark_matches(matches)
 
+	label = label or select_label()
 	if not label then
 		return nil, nil
 	end
