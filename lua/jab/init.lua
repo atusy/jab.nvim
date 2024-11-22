@@ -346,6 +346,42 @@ local function search_inline(str, reverse, labels, label)
 	return match, str
 end
 
+---Search lines for a string
+---@param str string
+---@param lines string[]
+---@param top number
+---@param labels string[]
+---@param selected_label string?
+local function search_lines(str, lines, top, labels, selected_label)
+	local previous_matches = {} ---@type JabMatch[]
+	while true do
+		local matches = find_window(str, top, lines, labels, previous_matches)
+		local match, label = select_match(matches, selected_label)
+		if not label then
+			return nil, str
+		end
+		if match then
+			return match, str
+		end
+		str = str .. label -- if no match, assume label as part of the search string
+		previous_matches = matches
+	end
+end
+
+---Incremental search for a string in the window
+---@param str string?
+---@param labels string[]
+---@param selected_label string?
+local function search_window(str, labels, selected_label)
+	local wininfo = vim.fn.getwininfo(vim.api.nvim_get_current_win())
+	local buf, top, bot = wininfo[1].bufnr, wininfo[1].topline - 1, wininfo[1].botline
+	local lines = vim.api.nvim_buf_get_lines(buf, top, bot, false)
+
+	backdrop(top, bot - 1, 0, #lines[#lines])
+
+	return search_lines(str or vim.fn.getcharstr(), lines, top, labels, selected_label)
+end
+
 ---@type JabFun
 function M._jab(kind, labels, opts)
 	kind = kind or "f"
@@ -357,36 +393,14 @@ function M._jab(kind, labels, opts)
 		return
 	end
 
-	local match ---@type JabMatch?
+	-- Search and select a match
 	local reverse = kind == "F" or kind == "T"
+	local match ---@type JabMatch?
 	local str = opts.str
 	if kind ~= "window" then
 		match, str = search_inline(str, reverse, labels, opts.label)
 	else
-		local wininfo = vim.fn.getwininfo(vim.api.nvim_get_current_win())
-		local buf, top, bot = wininfo[1].bufnr, wininfo[1].topline - 1, wininfo[1].botline
-		local lines = vim.api.nvim_buf_get_lines(buf, top, bot, false)
-
-		backdrop(top, bot - 1, 0, #lines[#lines])
-
-		str = str or vim.fn.getcharstr()
-		local previous_matches = {} ---@type JabMatch[]
-		while true do
-			local matches = find_window(str, top, lines, labels, previous_matches)
-			local label
-			match, label = select_match(matches, opts.label)
-			if not label then
-				return
-			end
-			if match then
-				break
-			end
-			str = str .. label -- if no match, assume label as part of the search string
-			previous_matches = matches
-		end
-	end
-	if not match then
-		return
+		match, str = search_window(str, labels, opts.label)
 	end
 
 	local mode = vim.api.nvim_get_mode().mode
