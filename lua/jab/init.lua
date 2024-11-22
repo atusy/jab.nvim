@@ -363,13 +363,14 @@ function M._jab(kind, labels, opts)
 	if kind ~= "window" then
 		match, str = search_inline(str, reverse, labels, opts.label)
 	else
-		local win = vim.api.nvim_get_current_win()
-		local wininfo = vim.fn.getwininfo(win)
+		local wininfo = vim.fn.getwininfo(vim.api.nvim_get_current_win())
 		local buf, top, bot = wininfo[1].bufnr, wininfo[1].topline - 1, wininfo[1].botline
 		local lines = vim.api.nvim_buf_get_lines(buf, top, bot, false)
-		local previous_matches = {} ---@type JabMatch[]
+
 		backdrop(top, bot - 1, 0, #lines[#lines])
+
 		str = str or vim.fn.getcharstr()
+		local previous_matches = {} ---@type JabMatch[]
 		while true do
 			local matches = find_window(str, top, lines, labels, previous_matches)
 			local label
