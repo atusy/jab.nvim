@@ -314,7 +314,10 @@ local function find_window(str, top, lines, labels, previous_matches)
 				if available_labels[candidate] then
 					available_labels[candidate] = nil
 					local str_test = str .. candidate
-					if not generate_finder(str_test, ignore_case)(txt, 1) then
+					if
+						(ignore_case and candidate ~= candidate:lower())
+						or not generate_finder(str_test, ignore_case)(txt, 1)
+					then
 						match.label = candidate
 						table.insert(valid_matches, match)
 						break
