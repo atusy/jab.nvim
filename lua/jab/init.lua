@@ -319,8 +319,8 @@ local function find_window(str, top, lines, labels, previous_matches)
 						table.insert(valid_matches, match)
 						break
 					end
-					candidate = table.remove(remaining_labels, 1)
 				end
+				candidate = table.remove(remaining_labels, 1)
 			end
 		else
 			table.insert(valid_matches, match)
