@@ -511,9 +511,9 @@ end
 
 --Excludes some punctuations:
 --  - ~: vim.regex(vim.fn["kensaku#query"]("a~")) raises couldn't parse regex: Vim:E33: No previous substitute regular expression
-local labels_f = string2labels([[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789!@#$%^&*()[]`'=-{}"+_]])
+local labels_f = string2labels([[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789!@#$%^&*()[]`'=~-{}"+_]])
 local labels_win =
-	string2labels([[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()[]`'=-{}"+_]])
+	string2labels([[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()[]`'=-{}~"+_]])
 
 M.f = function(labels)
 	return M.jab("f", labels or labels_f)
