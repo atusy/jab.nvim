@@ -16,6 +16,16 @@ To hit jabs on Japanese characters, you need following plugins.
 - https://github.com/lambdalisue/vim-kensaku
 - https://github.com/vim-denops/denops.vim
 
+## Demo
+
+### Incremental search
+
+![2024-11-26 12-26-31 mkv](https://github.com/user-attachments/assets/f50e5eb0-4441-494a-b4bc-c76aaf0e900c)
+
+### f-motions
+
+![2024-11-26 12-27-03 mkv](https://github.com/user-attachments/assets/d0689b8e-0945-4152-b1b7-6bdfa0cc4b03)
+
 ## Configurations
 
 ```lua
