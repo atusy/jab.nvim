@@ -262,10 +262,19 @@ local function find_window(str, top, lines, labels, previous_matches)
 				end
 
 				local label = positioned_labels[row] and positioned_labels[row][found[1]] or ""
-				local char_right = string.sub(line, found[2] + 1, found[2] + 1)
 				available_labels[label] = nil
 				available_labels_count = available_labels_count - 1
-				if label == char_right then
+
+				-- check right characters of the match
+				local label_ok = true
+				for _i = 1, 2 do
+					local char_right = string.sub(line, found[2] + _i, found[2] + _i)
+					available_labels[char_right] = nil
+					if label == char_right then
+						label_ok = false
+					end
+				end
+				if not label_ok then
 					label = ""
 				end
 
