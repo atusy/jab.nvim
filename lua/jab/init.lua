@@ -269,7 +269,9 @@ local function find_window(str, top, lines, labels, previous_matches)
 				local label_ok = true
 				for _i = 1, 2 do
 					local char_right = string.sub(line, found[2] + _i, found[2] + _i)
-					available_labels[char_right] = nil
+					if ignore_case then
+						char_right = char_right:lower()
+					end
 					if label == char_right then
 						label_ok = false
 					end
