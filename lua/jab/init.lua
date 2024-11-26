@@ -262,22 +262,25 @@ local function find_inwindow(str, top, lines, labels, previous_matches)
 				end
 
 				local label = positioned_labels[row] and positioned_labels[row][found[1]] or ""
-				available_labels[label] = nil
-				available_labels_count = available_labels_count - 1
 
-				-- check right characters of the match
-				local label_ok = true
+				-- check right characters of the match to avoid unexpected jumps from fast user-inputs
+				-- and update label of the match and available_labels
 				for _i = 1, 2 do
 					local char_right = string.sub(line, found[2] + _i, found[2] + _i)
+					if available_labels[char_right] then
+						available_labels[char_right] = nil
+						available_labels_count = available_labels_count - 1
+					end
 					if ignore_case then
 						char_right = char_right:lower()
 					end
 					if label == char_right then
-						label_ok = false
+						label = "" -- decide later
 					end
 				end
-				if not label_ok then
-					label = ""
+				if available_labels[label] then
+					available_labels[label] = nil
+					available_labels_count = available_labels_count - 1
 				end
 
 				local text_left = string.sub(line, 1, found[1])
