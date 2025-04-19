@@ -127,10 +127,12 @@ local regex_lastchar = vim.regex([[.$]])
 ---@param str string
 ---@param reverse boolean
 ---@param labels string[]
+---@param win number
+---@param buf number
 ---@return JabMatch[]
-local function find_inline(str, reverse, labels)
-	local cursor = vim.api.nvim_win_get_cursor(0)
-	local line = vim.api.nvim_buf_get_lines(0, cursor[1] - 1, cursor[1], false)[1]
+local function find_inline(str, reverse, labels, win, buf)
+	local cursor = vim.api.nvim_win_get_cursor(win)
+	local line = vim.api.nvim_buf_get_lines(buf, cursor[1] - 1, cursor[1], false)[1]
 	local row = cursor[1]
 	local col = cursor[2] + 1
 	local col_start = reverse and 1 or col
@@ -162,8 +164,9 @@ local function find_inline(str, reverse, labels)
 	return matches
 end
 
+---@param buf number
 ---@param matches JabMatch[]
-local function mark_matches(matches)
+local function mark_matches(buf, matches)
 	-- suppress flickers by switching namespaces
 	local ns1, ns2 = M.namespaces[1], M.namespaces[2]
 	local ns = ns1
@@ -194,7 +197,7 @@ local function mark_matches(matches)
 		end
 
 		-- show label and highlight match
-		vim.api.nvim_buf_set_extmark(0, ns, match.row - 1, match.col_label or match.col_start, {
+		vim.api.nvim_buf_set_extmark(buf, ns, match.row - 1, match.col_label or match.col_start, {
 			end_row = match.row - 1,
 			end_col = match.col_end,
 			virt_text = virt_text,
@@ -347,14 +350,15 @@ local function find_inwindow(str, top, lines, labels, previous_matches)
 end
 
 ---Select a match by comaparing the label with the user input
+---@param buf number
 ---@param matches JabMatch[]
 ---@param label string?
 ---@return JabMatch | nil, string | nil
-local function select_match(matches, label)
+local function select_match(buf, matches, label)
 	if not matches or #matches == 0 then
 		return nil, nil
 	end
-	mark_matches(matches)
+	mark_matches(buf, matches)
 
 	label = label or select_label()
 	if not label then
@@ -377,9 +381,11 @@ local jumpto = nil
 ---@param reverse boolean
 ---@param labels string[]
 ---@param label string?
+---@param win number
+---@param buf number
 ---@return JabMatch?, string
-local function search_inline(str, reverse, labels, label)
-	local cursor = vim.api.nvim_win_get_cursor(0)
+local function search_inline(str, reverse, labels, label, win, buf)
+	local cursor = vim.api.nvim_win_get_cursor(win)
 	backdrop(
 		cursor[1] - 1,
 		cursor[1] - (reverse and 1 or 0),
@@ -387,11 +393,11 @@ local function search_inline(str, reverse, labels, label)
 		reverse and cursor[2] or 0
 	)
 	str = str or vim.fn.getcharstr()
-	local matches = find_inline(str, reverse, labels)
+	local matches = find_inline(str, reverse, labels, win, buf)
 	if #matches == 1 then
 		return matches[1], str
 	end
-	local match, _ = select_match(matches, label)
+	local match, _ = select_match(buf, matches, label)
 	return match, str
 end
 
@@ -401,11 +407,12 @@ end
 ---@param top number
 ---@param labels string[]
 ---@param selected_label string?
-local function search_lines(str, lines, top, labels, selected_label)
+---@param buf number
+local function search_lines(str, lines, top, labels, selected_label, buf)
 	local previous_matches = {} ---@type JabMatch[]
 	while true do
 		local matches = find_inwindow(str, top, lines, labels, previous_matches)
-		local match, label = select_match(matches, selected_label)
+		local match, label = select_match(buf, matches, selected_label)
 		if not label then
 			return nil, str
 		end
@@ -421,14 +428,15 @@ end
 ---@param str string?
 ---@param labels string[]
 ---@param selected_label string?
-local function search_inwindow(str, labels, selected_label)
-	local wininfo = vim.fn.getwininfo(vim.api.nvim_get_current_win())
+---@param win number
+local function search_inwindow(str, labels, selected_label, win)
+	local wininfo = vim.fn.getwininfo(win)
 	local buf, top, bot = wininfo[1].bufnr, wininfo[1].topline - 1, wininfo[1].botline
 	local lines = vim.api.nvim_buf_get_lines(buf, top, bot, false)
 
 	backdrop(top, bot - 1, 0, #lines[#lines])
 
-	return search_lines(str or vim.fn.getcharstr(), lines, top, labels, selected_label)
+	return search_lines(str or vim.fn.getcharstr(), lines, top, labels, selected_label, buf)
 end
 
 ---@type JabFun
@@ -436,11 +444,13 @@ function M._jab(kind, labels, opts)
 	kind = kind or "f"
 	labels = labels or (opts and opts.labels)
 	opts = opts or {}
+	opts.win = opts.win or vim.api.nvim_get_current_win()
+	opts.buf = opts.buf or vim.api.nvim_win_get_buf(opts.win)
 
 	-- When recursed from the expr-mapping, jump to the position
 	-- detrmined by the last call.
 	if jumpto ~= nil then
-		vim.api.nvim_win_set_cursor(0, jumpto)
+		vim.api.nvim_win_set_cursor(opts.win, jumpto)
 		jumpto = nil
 		return
 	end
@@ -450,9 +460,9 @@ function M._jab(kind, labels, opts)
 	local match ---@type JabMatch?
 	local str = opts.str
 	if kind ~= "window" then
-		match, str = search_inline(str, reverse, labels, opts.label)
+		match, str = search_inline(str, reverse, labels, opts.label, opts.win, opts.buf)
 	else
-		match, str = search_inwindow(str, labels, opts.label)
+		match, str = search_inwindow(str, labels, opts.label, opts.win)
 	end
 
 	-- test if match is available
@@ -479,7 +489,14 @@ function M._jab(kind, labels, opts)
 	-- Cache the current state
 	jumpto = { match.row, jump_col }
 	if operator_pending then
-		M.cache.opts = { str = str, label = match.label, instant = true, labels = labels } ---@type JabOpts
+		M.cache.opts = {
+			str = str,
+			label = match.label,
+			instant = true,
+			labels = labels,
+			win = opts.win,
+			buf = opts.buf,
+		} ---@type JabOpts
 	end
 
 	-- Recurse via the expr-mapping
