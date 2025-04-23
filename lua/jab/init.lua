@@ -429,9 +429,10 @@ end
 ---@param labels string[]
 ---@param selected_label string?
 ---@param win number
-local function search_inwindow(str, labels, selected_label, win)
+---@param buf number
+local function search_inwindow(str, labels, selected_label, win, buf)
 	local wininfo = vim.fn.getwininfo(win)
-	local buf, top, bot = wininfo[1].bufnr, wininfo[1].topline - 1, wininfo[1].botline
+	local top, bot = wininfo[1].topline - 1, wininfo[1].botline
 	local lines = vim.api.nvim_buf_get_lines(buf, top, bot, false)
 
 	backdrop(top, bot - 1, 0, #lines[#lines])
@@ -462,7 +463,7 @@ function M._jab(kind, labels, opts)
 	if kind ~= "window" then
 		match, str = search_inline(str, reverse, labels, opts.label, opts.win, opts.buf)
 	else
-		match, str = search_inwindow(str, labels, opts.label, opts.win)
+		match, str = search_inwindow(str, labels, opts.label, opts.win, opts.buf)
 	end
 
 	-- test if match is available
