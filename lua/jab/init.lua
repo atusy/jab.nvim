@@ -509,6 +509,7 @@ function M.jab(kind, labels, opts)
 	local ok, res = pcall(M._jab, kind, labels, opts)
 	M.clear()
 	if not ok then
+		jumpto = nil
 		if res then
 			error(res, vim.log.levels.ERROR)
 		end
