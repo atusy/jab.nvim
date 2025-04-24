@@ -374,6 +374,7 @@ local function select_match(buf, matches, label)
 	return nil, label
 end
 
+---@type integer[] | nil
 local jumpto = nil
 
 ---Search a character on the current line for f-motion
