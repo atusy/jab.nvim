@@ -512,6 +512,7 @@ function M.jab(kind, labels, opts)
 	M.clear()
 	if not ok then
 		jumpto = nil
+		M.cache.opts = nil
 		if res then
 			error(res, vim.log.levels.ERROR)
 		end
