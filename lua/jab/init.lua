@@ -24,8 +24,8 @@ function M.clear(buf, namespaces)
 	vim.cmd.redraw()
 end
 
-local function backdrop(row_start, row_end, col_start, col_end)
-	vim.api.nvim_buf_set_extmark(0, M.namespaces[3], row_start, col_start, {
+local function backdrop(buf, row_start, row_end, col_start, col_end)
+	vim.api.nvim_buf_set_extmark(buf, M.namespaces[3], row_start, col_start, {
 		end_row = row_end,
 		end_col = col_end,
 		hl_group = "comment",
@@ -207,7 +207,7 @@ local function mark_matches(buf, matches)
 	end
 
 	-- clean up unused namespace and redraw
-	M.clear(0, { used_ns })
+	M.clear(buf, { used_ns })
 end
 
 ---Select a label from the user input
@@ -388,6 +388,7 @@ local jumpto = nil
 local function search_inline(str, reverse, labels, label, win, buf)
 	local cursor = vim.api.nvim_win_get_cursor(win)
 	backdrop(
+		buf,
 		cursor[1] - 1,
 		cursor[1] - (reverse and 1 or 0),
 		reverse and 0 or cursor[2] + 1,
