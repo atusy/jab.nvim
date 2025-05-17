@@ -437,7 +437,7 @@ local function search_inwindow(str, labels, selected_label, win, buf)
 	local top, bot = wininfo[1].topline - 1, wininfo[1].botline
 	local lines = vim.api.nvim_buf_get_lines(buf, top, bot, false)
 
-	backdrop(top, bot - 1, 0, #lines[#lines])
+	backdrop(buf, top, bot - 1, 0, #lines[#lines])
 
 	return search_lines(str or vim.fn.getcharstr(), lines, top, labels, selected_label, buf)
 end
