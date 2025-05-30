@@ -485,7 +485,7 @@ function M._jab(kind, labels, opts)
 
 	-- Instant jump without recursing via the expr-mapping
 	if opts.instant then
-		vim.api.nvim_win_set_cursor(0, { match.row, jump_col })
+		vim.api.nvim_win_set_cursor(opts.win, { match.row, jump_col })
 		return
 	end
 
@@ -509,7 +509,7 @@ end
 ---@type JabFun
 function M.jab(kind, labels, opts)
 	local ok, res = pcall(M._jab, kind, labels, opts)
-	M.clear()
+	M.clear(vim.api.nvim_get_current_buf())
 	if not ok then
 		jumpto = nil
 		M.cache.opts = nil
