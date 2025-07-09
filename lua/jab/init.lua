@@ -19,7 +19,7 @@ local M = {
 
 function M.clear(buf, namespaces)
 	for _, ns in ipairs(namespaces or M.namespaces) do
-		vim.api.nvim_buf_clear_namespace(buf or 0, ns, 0, -1)
+		vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
 	end
 	vim.cmd.redraw()
 end
