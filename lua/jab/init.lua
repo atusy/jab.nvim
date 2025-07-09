@@ -17,6 +17,9 @@ local M = {
 	cache = { opts = nil, namespace = 1 },
 }
 
+---@param buf number
+---@param namespaces number[]
+---@return nil
 function M.clear(buf, namespaces)
 	for _, ns in ipairs(namespaces or M.namespaces) do
 		vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
@@ -24,6 +27,12 @@ function M.clear(buf, namespaces)
 	vim.cmd.redraw()
 end
 
+---@param buf number
+---@param row_start number
+---@param row_end number
+---@param col_start number
+---@param col_end number
+---@return nil
 local function backdrop(buf, row_start, row_end, col_start, col_end)
 	vim.api.nvim_buf_set_extmark(buf, M.namespaces[3], row_start, col_start, {
 		end_row = row_end,
@@ -60,6 +69,9 @@ end
 --- Generate migemo-based regular expression with vim-kensaku
 ---
 --- with addition of ignore case option.
+--- @param pat string
+--- @param ignore_case boolean
+--- @return string
 local function generate_kensaku_query(pat, ignore_case)
 	local query = _generate_kensaku_query(pat)
 	if ignore_case then
@@ -82,7 +94,10 @@ local function generate_finder(pat, ignore_case)
 		pat = string.lower(pat)
 	end
 
-	-- default finder
+	--- default finder
+	--- @param line string
+	--- @param init number
+	--- @return {[1]: number, [2]: number} | nil
 	local function string_find(line, init)
 		if ignore_case then
 			line = string.lower(line)
@@ -109,7 +124,10 @@ local function generate_finder(pat, ignore_case)
 		return string_find
 	end
 
-	-- use vim-kensaku combined with string_find
+	--- finder combining vim-kensaku and string_find
+	--- @param line string
+	--- @param init number
+	--- @return {[1]: number, [2]: number} | nil
 	return function(line, init)
 		if line:match("[^%w%p%s]") then
 			local i, j = regex:match_str(string.sub(line, init))
