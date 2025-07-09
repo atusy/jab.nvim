@@ -464,7 +464,7 @@ end
 function M._jab(kind, labels, opts)
 	kind = kind or "f"
 	labels = labels or (opts and opts.labels)
-	opts = opts or {}
+	opts = opts and vim.deepcopy(opts) or {}
 	opts.win = opts.win or vim.api.nvim_get_current_win()
 	opts.buf = opts.buf or vim.api.nvim_win_get_buf(opts.win)
 
@@ -515,8 +515,6 @@ function M._jab(kind, labels, opts)
 			label = match.label,
 			instant = true,
 			labels = labels,
-			win = opts.win,
-			buf = opts.buf,
 		} ---@type JabOpts
 	end
 

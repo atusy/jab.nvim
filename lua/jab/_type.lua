@@ -3,8 +3,8 @@
 ---@field str string
 ---@field label string
 ---@field instant boolean
----@field win number
----@field buf number
+---@field win number?
+---@field buf number?
 
 ---@class JabSearchOpts
 ---@field regex string
