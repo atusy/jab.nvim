@@ -232,8 +232,8 @@ end
 ---@return string | nil
 local function select_label()
 	local ok, label = pcall(vim.fn.getcharstr)
-	if not ok then
-		vim.notify(label)
+	if not ok and label ~= "Keyboard interrupt" then
+		error(label)
 	end
 	return ok and label or nil
 end
