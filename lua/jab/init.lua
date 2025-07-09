@@ -480,10 +480,10 @@ function M._jab(kind, labels, opts)
 	local reverse = kind == "F" or kind == "T"
 	local match ---@type JabMatch?
 	local str = opts.str
-	if kind ~= "window" then
-		match, str = search_inline(str, reverse, labels, opts.label, opts.win, opts.buf)
-	else
+	if kind == "window" then
 		match, str = search_inwindow(str, labels, opts.label, opts.win, opts.buf)
+	else
+		match, str = search_inline(str, reverse, labels, opts.label, opts.win, opts.buf)
 	end
 
 	-- test if match is available
