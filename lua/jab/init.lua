@@ -532,6 +532,9 @@ function M.jab(kind, labels, opts)
 		jumpto = nil
 		M.cache.opts = nil
 		if res then
+			if res == "Keyboard interrupt" then
+				return nil
+			end
 			error(res, vim.log.levels.ERROR)
 		end
 		error()
