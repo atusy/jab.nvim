@@ -428,6 +428,7 @@ end
 ---@param labels string[]
 ---@param selected_label string?
 ---@param buf number
+---@return JabMatch | nil, string
 local function search_lines(str, lines, top, labels, selected_label, buf)
 	local previous_matches = {} ---@type JabMatch[]
 	while true do
@@ -438,6 +439,10 @@ local function search_lines(str, lines, top, labels, selected_label, buf)
 		end
 		if match then
 			return match, str
+		end
+		if selected_label then
+			-- if selected_label is given, do not consider label as new input
+			return nil, str
 		end
 		if vim.fn.keytrans(label) == "<BS>" then
 			str = str:sub(1, -2) -- remove last character
