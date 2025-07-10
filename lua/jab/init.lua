@@ -1,6 +1,7 @@
 ---@class JabModule
 ---@field jab JabFun base function to implement motions
----@field jab_win JabMotionFun motion with incremental search the window
+---@field jab_win JabMotionFun incrementally search and move within the window
+---@field jab_expr fun(opts: JabOpts): string callback for expr-mapping
 ---@field f JabMotionFun f-motion
 ---@field F JabMotionFun F-motion
 ---@field t JabMotionFun t-motion
