@@ -6,7 +6,7 @@
 ---@field t JabMotionFun t-motion
 ---@field T JabMotionFun T-motion
 ---@field namespaces number[] 1 and 2 for labelling, and 3 for backdrop
----@field cache {opts_general: JabOpts?, opts_op: JabOptsCore?, namespace: number, id_op : number} internal caches
+---@field cache {opts_general: JabOpts?, opts_op: JabOptsCore?, namespace: number, id_op : 1 | -1} internal caches
 ---@field clear fun(buf: number?, namespaces: number[]?): nil clears the labelling and backdrop
 local M = {
 	namespaces = {
@@ -527,6 +527,9 @@ function M.jab(opts)
 	return nil
 end
 
+---@param id -1 | 1
+---@param opts JabOpts
+---@return string
 function M._jab_expr(id, opts)
 	local mode = vim.api.nvim_get_mode().mode
 	local operator_pending = mode == "no"
@@ -541,8 +544,10 @@ function M._jab_expr(id, opts)
 	return "<cmd>lua require('jab').jab(require('jab').cache.opts_general)<cr>"
 end
 
+---@param opts JabOpts
+---@return string
 function M.jab_expr(opts)
-	return M._jab_expr(M.cache.id_op + 1, opts)
+	return M._jab_expr(-M.cache.id_op, opts)
 end
 
 ---@param x string
