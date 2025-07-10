@@ -439,7 +439,11 @@ local function search_lines(str, lines, top, labels, selected_label, buf)
 		if match then
 			return match, str
 		end
-		str = str .. label -- if no match, assume label as part of the search string
+		if vim.fn.keytrans(label) == "<BS>" then
+			str = str:sub(1, -2) -- remove last character
+		else
+			str = str .. label -- if no match, assume label as part of the search string
+		end
 		previous_matches = matches
 	end
 end
