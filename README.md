@@ -67,8 +67,8 @@ end, { expr = true })
 
 Default labels are as follows.
 
-- f/F/t/T: ``` abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()[]`'=-{}"+_ ``` 
-- jab_win: ``` ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()[]`'=-{}"+_ ```
+- f/F/t/T: See `require("jab").labels_f` 
+- jab_win: See `require("jab").labels_win`
 
 Note that `jab_win` is the incremental search, so the above labels are not always used as hints.
 It automatically ignore the labels that can be a part of the search query.
