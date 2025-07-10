@@ -488,10 +488,7 @@ function M._jab(opts)
 	local mode = vim.api.nvim_get_mode().mode
 	local operator_pending = mode == "no"
 	if not match then
-		if operator_pending then
-			return "<Esc>"
-		end
-		return ""
+		return nil
 	end
 
 	-- Find jump position
@@ -515,19 +512,19 @@ end
 
 ---@type JabFun
 function M.jab(opts)
-	local ok, res = pcall(M._jab, opts)
+	local ok, err = pcall(M._jab, opts)
 	M.clear(vim.api.nvim_get_current_buf())
 	if not ok then
 		M.cache.opts_op = nil
-		if res then
-			if res == "Keyboard interrupt" then
+		if err then
+			if err == "Keyboard interrupt" then
 				return nil
 			end
-			error(res, vim.log.levels.ERROR)
+			error(err, vim.log.levels.ERROR)
 		end
 		error()
 	end
-	return res
+	return nil
 end
 
 function M._jab_expr(id, opts)
