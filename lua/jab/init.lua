@@ -566,24 +566,18 @@ end
 M.labels_f = string2labels([[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789!@#$%^&*()[]`'=~-{}"+_]])
 M.labels_win = string2labels([[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()[]`'=-{}~"+_]])
 
-M.f = function(opts)
-	return M.jab_expr(vim.tbl_deep_extend("keep", { kind = "f" }, opts or {}))
+---@param kind JabKind
+---@return JabMotionFun
+local function create_jab_motion_fun(kind)
+	return function(opts)
+		return M.jab_expr(vim.tbl_deep_extend("keep", { kind = kind }, opts or {}))
+	end
 end
 
-M.t = function(opts)
-	return M.jab_expr(vim.tbl_deep_extend("keep", { kind = "t" }, opts or {}))
-end
-
-M.F = function(opts)
-	return M.jab_expr(vim.tbl_deep_extend("keep", { kind = "F" }, opts or {}))
-end
-
-M.T = function(opts)
-	return M.jab_expr(vim.tbl_deep_extend("keep", { kind = "T" }, opts or {}))
-end
-
-M.jab_win = function(opts)
-	return M.jab_expr(vim.tbl_deep_extend("keep", { kind = "window" }, opts or {}))
-end
+M.f = create_jab_motion_fun("f")
+M.t = create_jab_motion_fun("t")
+M.F = create_jab_motion_fun("F")
+M.T = create_jab_motion_fun("T")
+M.jab_win = create_jab_motion_fun("window")
 
 return M
