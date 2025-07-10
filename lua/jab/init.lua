@@ -17,6 +17,21 @@ local M = {
 	cache = { opts_general = nil, opts_op = nil, namespace = 1, id_op = -1 },
 }
 
+---@param x string
+---@return string[]
+local function string2labels(x)
+	local labels = {}
+	for i = 1, #x do
+		table.insert(labels, string.sub(x, i, i))
+	end
+	return labels
+end
+
+--Excludes some punctuations:
+--  - ~: vim.regex(vim.fn["kensaku#query"]("a~")) raises couldn't parse regex: Vim:E33: No previous substitute regular expression
+M.labels_f = string2labels([[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789!@#$%^&*()[]`'=~-{}"+_]])
+M.labels_win = string2labels([[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()[]`'=-{}~"+_]])
+
 ---@param buf number
 ---@param namespaces number[]
 ---@return nil
@@ -543,21 +558,6 @@ local function _jab_expr(id, opts)
 	M.cache.opts_general = opts
 	return "<cmd>lua require('jab').jab(require('jab').cache.opts_general)<cr>"
 end
-
----@param x string
----@return string[]
-local function string2labels(x)
-	local labels = {}
-	for i = 1, #x do
-		table.insert(labels, string.sub(x, i, i))
-	end
-	return labels
-end
-
---Excludes some punctuations:
---  - ~: vim.regex(vim.fn["kensaku#query"]("a~")) raises couldn't parse regex: Vim:E33: No previous substitute regular expression
-M.labels_f = string2labels([[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789!@#$%^&*()[]`'=~-{}"+_]])
-M.labels_win = string2labels([[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()[]`'=-{}~"+_]])
 
 ---@param kind JabKind
 ---@return JabMotionFun
