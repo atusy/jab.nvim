@@ -6,7 +6,7 @@
 ---@field t JabMotionFun t-motion
 ---@field T JabMotionFun T-motion
 ---@field namespaces number[] 1 and 2 for labelling, and 3 for backdrop
----@field cache {opts: JabOpts?, namespace: number} internal caches
+---@field cache {opts: JabOptsCore?, namespace: number} internal caches
 ---@field clear fun(buf: number?, namespaces: number[]?): nil clears the labelling and backdrop
 local M = {
 	namespaces = {
@@ -465,10 +465,10 @@ local function search_inwindow(str, labels, selected_label, win, buf)
 end
 
 ---@type JabFun
-function M._jab(kind, labels, opts)
-	kind = kind or "f"
-	labels = labels or (opts and opts.labels)
+function M._jab(opts)
 	opts = opts and vim.deepcopy(opts) or {}
+	local kind = opts.kind or "f"
+	local labels = opts.labels or (opts.kind == "window" and M.labels_win or M.labels_f)
 	opts.win = opts.win or vim.api.nvim_get_current_win()
 	opts.buf = opts.buf or vim.api.nvim_win_get_buf(opts.win)
 
@@ -515,6 +515,7 @@ function M._jab(kind, labels, opts)
 	jumpto = { match.row, jump_col }
 	if operator_pending then
 		M.cache.opts = {
+			kind = kind,
 			str = str,
 			label = match.label,
 			instant = true,
@@ -523,12 +524,12 @@ function M._jab(kind, labels, opts)
 	end
 
 	-- Recurse via the expr-mapping
-	return string.format("<cmd>lua require('jab').jab([==[%s]==], nil, require('jab').cache.opts)<cr>", kind)
+	return string.format("<cmd>lua require('jab').jab(require('jab').cache.opts)<cr>")
 end
 
 ---@type JabFun
-function M.jab(kind, labels, opts)
-	local ok, res = pcall(M._jab, kind, labels, opts)
+function M.jab(opts)
+	local ok, res = pcall(M._jab, opts)
 	M.clear(vim.api.nvim_get_current_buf())
 	if not ok then
 		jumpto = nil
@@ -556,28 +557,27 @@ end
 
 --Excludes some punctuations:
 --  - ~: vim.regex(vim.fn["kensaku#query"]("a~")) raises couldn't parse regex: Vim:E33: No previous substitute regular expression
-local labels_f = string2labels([[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789!@#$%^&*()[]`'=~-{}"+_]])
-local labels_win =
-	string2labels([[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()[]`'=-{}~"+_]])
+M.labels_f = string2labels([[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789!@#$%^&*()[]`'=~-{}"+_]])
+M.labels_win = string2labels([[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()[]`'=-{}~"+_]])
 
-M.f = function(labels)
-	return M.jab("f", labels or labels_f)
+M.f = function(opts)
+	return M.jab(vim.tbl_deep_extend("keep", { kind = "f" }, opts or {}))
 end
 
-M.t = function(labels)
-	return M.jab("t", labels or labels_f)
+M.t = function(opts)
+	return M.jab(vim.tbl_deep_extend("keep", { kind = "t" }, opts or {}))
 end
 
-M.F = function(labels)
-	return M.jab("F", labels or labels_f)
+M.F = function(opts)
+	return M.jab(vim.tbl_deep_extend("keep", { kind = "F" }, opts or {}))
 end
 
-M.T = function(labels)
-	return M.jab("T", labels or labels_f)
+M.T = function(opts)
+	return M.jab(vim.tbl_deep_extend("keep", { kind = "T" }, opts or {}))
 end
 
-M.jab_win = function(labels)
-	return M.jab("window", labels or labels_win)
+M.jab_win = function(opts)
+	return M.jab(vim.tbl_deep_extend("keep", { kind = "window" }, opts or {}))
 end
 
 return M

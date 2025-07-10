@@ -1,13 +1,15 @@
----@class JabOpts
----@field labels string[]?
+---@class JabOptsCore
+---@field labels string[]
 ---@field str string
 ---@field label string
 ---@field instant boolean
+---@field kind JabKind
+
+---@class JabOpts: JabOptsCore
 ---@field win number?
 ---@field buf number?
-
----@class JabSearchOpts
----@field regex string
+---@field labels string[]?
+---@field kind JabKind?
 
 ---@class JabMatch
 ---@field row number
@@ -18,5 +20,5 @@
 ---@field width_label number?
 
 ---@alias JabKind "f" | "F" | "t" | "T" | "window"
----@alias JabFun fun(kind: JabKind, labels: string[]?, opts: JabOpts | JabSearchOpts | nil): string?
----@alias JabMotionFun fun(labels: string[]?): string?
+---@alias JabFun fun(opts: JabOpts | nil): string?
+---@alias JabMotionFun fun(opts: JabOpts): string?
