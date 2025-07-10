@@ -1,7 +1,6 @@
 ---@class JabModule
 ---@field jab JabFun base function to implement motions
 ---@field jab_win JabMotionFun incrementally search and move within the window
----@field jab_expr fun(opts: JabOpts): string callback for expr-mapping
 ---@field f JabMotionFun f-motion
 ---@field F JabMotionFun F-motion
 ---@field t JabMotionFun t-motion
@@ -531,7 +530,7 @@ end
 ---@param id -1 | 1
 ---@param opts JabOpts
 ---@return string
-function M._jab_expr(id, opts)
+local function _jab_expr(id, opts)
 	local mode = vim.api.nvim_get_mode().mode
 	local operator_pending = mode == "no"
 	if operator_pending then
@@ -543,12 +542,6 @@ function M._jab_expr(id, opts)
 	end
 	M.cache.opts_general = opts
 	return "<cmd>lua require('jab').jab(require('jab').cache.opts_general)<cr>"
-end
-
----@param opts JabOpts
----@return string
-function M.jab_expr(opts)
-	return M._jab_expr(-M.cache.id_op, opts)
 end
 
 ---@param x string
@@ -568,16 +561,16 @@ M.labels_win = string2labels([[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvw
 
 ---@param kind JabKind
 ---@return JabMotionFun
-local function create_jab_motion_fun(kind)
+local function _create_jab_motion_fun(kind)
 	return function(opts)
-		return M.jab_expr(vim.tbl_deep_extend("keep", { kind = kind }, opts or {}))
+		return _jab_expr(-M.cache.id_op, vim.tbl_deep_extend("keep", { kind = kind }, opts or {}))
 	end
 end
 
-M.f = create_jab_motion_fun("f")
-M.t = create_jab_motion_fun("t")
-M.F = create_jab_motion_fun("F")
-M.T = create_jab_motion_fun("T")
-M.jab_win = create_jab_motion_fun("window")
+M.f = _create_jab_motion_fun("f")
+M.t = _create_jab_motion_fun("t")
+M.F = _create_jab_motion_fun("F")
+M.T = _create_jab_motion_fun("T")
+M.jab_win = _create_jab_motion_fun("window")
 
 return M
