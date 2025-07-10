@@ -61,7 +61,7 @@ Exceptionally, you can provide custome-labels like below.
 
 ```lua
 vim.keymap.set({ "n", "x", "o" }, "f", function()
-	return require("jab").f({ "a", "b", "c" })
+	return require("jab").f({ labels = { "a", "b", "c" } })
 end, { expr = true })
 ```
 
