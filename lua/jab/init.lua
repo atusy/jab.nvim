@@ -1,12 +1,12 @@
 ---@class JabModule
 ---@field jab JabFun base function to implement motions
----@field jab_win JabMotionFun motion with incremental search the window
+---@field jab_win JabMotionFun incrementally search and move within the window
 ---@field f JabMotionFun f-motion
 ---@field F JabMotionFun F-motion
 ---@field t JabMotionFun t-motion
 ---@field T JabMotionFun T-motion
 ---@field namespaces number[] 1 and 2 for labelling, and 3 for backdrop
----@field cache {opts: JabOptsCore?, namespace: number} internal caches
+---@field cache {opts_general: JabOpts?, opts_op: JabOptsCore?, namespace: number, id_op : 1 | -1} internal caches
 ---@field clear fun(buf: number?, namespaces: number[]?): nil clears the labelling and backdrop
 local M = {
 	namespaces = {
@@ -14,8 +14,23 @@ local M = {
 		vim.api.nvim_create_namespace("jab-match2"),
 		vim.api.nvim_create_namespace("jab-backdrop"),
 	},
-	cache = { opts = nil, namespace = 1 },
+	cache = { opts_general = nil, opts_op = nil, namespace = 1, id_op = -1 },
 }
+
+---@param x string
+---@return string[]
+local function string2labels(x)
+	local labels = {}
+	for i = 1, #x do
+		table.insert(labels, string.sub(x, i, i))
+	end
+	return labels
+end
+
+--Excludes some punctuations:
+--  - ~: vim.regex(vim.fn["kensaku#query"]("a~")) raises couldn't parse regex: Vim:E33: No previous substitute regular expression
+M.labels_f = string2labels([[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789!@#$%^&*()[]`'=~-{}"+_]])
+M.labels_win = string2labels([[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()[]`'=-{}~"+_]])
 
 ---@param buf number
 ---@param namespaces number[]
@@ -392,9 +407,6 @@ local function select_match(buf, matches, label)
 	return nil, label
 end
 
----@type integer[] | nil
-local jumpto = nil
-
 ---Search a character on the current line for f-motion
 ---@param str string? a character
 ---@param reverse boolean
@@ -477,14 +489,6 @@ function M._jab(opts)
 	opts.win = opts.win or vim.api.nvim_get_current_win()
 	opts.buf = opts.buf or vim.api.nvim_win_get_buf(opts.win)
 
-	-- When recursed from the expr-mapping, jump to the position
-	-- detrmined by the last call.
-	if jumpto ~= nil then
-		vim.api.nvim_win_set_cursor(opts.win, jumpto)
-		jumpto = nil
-		return
-	end
-
 	-- Search and select a match
 	local reverse = kind == "F" or kind == "T"
 	local match ---@type JabMatch?
@@ -499,10 +503,7 @@ function M._jab(opts)
 	local mode = vim.api.nvim_get_mode().mode
 	local operator_pending = mode == "no"
 	if not match then
-		if operator_pending then
-			return "<Esc>"
-		end
-		return ""
+		return nil
 	end
 
 	-- Find jump position
@@ -510,16 +511,9 @@ function M._jab(opts)
 	local jump_col = (kind == "f" or kind == "T") and match.col_end - 1 or match.col_start
 	jump_col = jump_col + offsets[kind] + (not reverse and operator_pending and 1 or 0)
 
-	-- Instant jump without recursing via the expr-mapping
-	if opts.instant then
-		vim.api.nvim_win_set_cursor(opts.win, { match.row, jump_col })
-		return
-	end
-
 	-- Cache the current state
-	jumpto = { match.row, jump_col }
 	if operator_pending then
-		M.cache.opts = {
+		M.cache.opts_op = {
 			kind = kind,
 			str = str,
 			label = match.label,
@@ -528,61 +522,55 @@ function M._jab(opts)
 		} ---@type JabOpts
 	end
 
-	-- Recurse via the expr-mapping
-	return string.format("<cmd>lua require('jab').jab(require('jab').cache.opts)<cr>")
+	vim.api.nvim_win_set_cursor(opts.win, { match.row, jump_col })
 end
 
 ---@type JabFun
 function M.jab(opts)
-	local ok, res = pcall(M._jab, opts)
+	local ok, err = pcall(M._jab, opts)
 	M.clear(vim.api.nvim_get_current_buf())
 	if not ok then
-		jumpto = nil
-		M.cache.opts = nil
-		if res then
-			if res == "Keyboard interrupt" then
+		M.cache.opts_op = nil
+		if err then
+			if err == "Keyboard interrupt" then
 				return nil
 			end
-			error(res, vim.log.levels.ERROR)
+			error(err, vim.log.levels.ERROR)
 		end
 		error()
 	end
-	return res
+	return nil
 end
 
----@param x string
----@return string[]
-local function string2labels(x)
-	local labels = {}
-	for i = 1, #x do
-		table.insert(labels, string.sub(x, i, i))
+---@param id -1 | 1
+---@param opts JabOpts
+---@return string
+local function _jab_expr(id, opts)
+	local mode = vim.api.nvim_get_mode().mode
+	local operator_pending = mode == "no"
+	if operator_pending then
+		if id ~= M.cache.id_op then
+			M.cache.id_op = id
+			M.cache.opts_op = opts
+		end
+		return "<cmd>lua require('jab').jab(require('jab').cache.opts_op)<cr>"
 	end
-	return labels
+	M.cache.opts_general = opts
+	return "<cmd>lua require('jab').jab(require('jab').cache.opts_general)<cr>"
 end
 
---Excludes some punctuations:
---  - ~: vim.regex(vim.fn["kensaku#query"]("a~")) raises couldn't parse regex: Vim:E33: No previous substitute regular expression
-M.labels_f = string2labels([[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789!@#$%^&*()[]`'=~-{}"+_]])
-M.labels_win = string2labels([[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()[]`'=-{}~"+_]])
-
-M.f = function(opts)
-	return M.jab(vim.tbl_deep_extend("keep", { kind = "f" }, opts or {}))
+---@param kind JabKind
+---@return JabMotionFun
+local function _create_jab_motion_fun(kind)
+	return function(opts)
+		return _jab_expr(-M.cache.id_op, vim.tbl_deep_extend("keep", { kind = kind }, opts or {}))
+	end
 end
 
-M.t = function(opts)
-	return M.jab(vim.tbl_deep_extend("keep", { kind = "t" }, opts or {}))
-end
-
-M.F = function(opts)
-	return M.jab(vim.tbl_deep_extend("keep", { kind = "F" }, opts or {}))
-end
-
-M.T = function(opts)
-	return M.jab(vim.tbl_deep_extend("keep", { kind = "T" }, opts or {}))
-end
-
-M.jab_win = function(opts)
-	return M.jab(vim.tbl_deep_extend("keep", { kind = "window" }, opts or {}))
-end
+M.f = _create_jab_motion_fun("f")
+M.t = _create_jab_motion_fun("t")
+M.F = _create_jab_motion_fun("F")
+M.T = _create_jab_motion_fun("T")
+M.jab_win = _create_jab_motion_fun("window")
 
 return M

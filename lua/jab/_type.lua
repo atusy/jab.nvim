@@ -20,5 +20,5 @@
 ---@field width_label number?
 
 ---@alias JabKind "f" | "F" | "t" | "T" | "window"
----@alias JabFun fun(opts: JabOpts | nil): string?
+---@alias JabFun fun(opts: JabOpts | nil): nil
 ---@alias JabMotionFun fun(opts: JabOpts): string?
